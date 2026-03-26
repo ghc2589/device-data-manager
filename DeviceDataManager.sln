@@ -5,8 +5,6 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceDataManager.Domain", "src\DeviceDataManager.Domain\DeviceDataManager.Domain.csproj", "{8BCD40BF-A38E-449B-82C9-108C0B3CDB1A}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceDataManager.Application", "src\DeviceDataManager.Application\DeviceDataManager.Application.csproj", "{BBD7593E-E420-4DE5-B151-CFDA99E0FD8F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceDataManager.Infrastructure", "src\DeviceDataManager.Infrastructure\DeviceDataManager.Infrastructure.csproj", "{B471E32E-6748-4AC5-8624-D4BD8A05E683}"
@@ -23,18 +21,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{8BCD40BF-A38E-449B-82C9-108C0B3CDB1A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8BCD40BF-A38E-449B-82C9-108C0B3CDB1A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8BCD40BF-A38E-449B-82C9-108C0B3CDB1A}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{8BCD40BF-A38E-449B-82C9-108C0B3CDB1A}.Debug|x64.Build.0 = Debug|Any CPU
-		{8BCD40BF-A38E-449B-82C9-108C0B3CDB1A}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{8BCD40BF-A38E-449B-82C9-108C0B3CDB1A}.Debug|x86.Build.0 = Debug|Any CPU
-		{8BCD40BF-A38E-449B-82C9-108C0B3CDB1A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8BCD40BF-A38E-449B-82C9-108C0B3CDB1A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8BCD40BF-A38E-449B-82C9-108C0B3CDB1A}.Release|x64.ActiveCfg = Release|Any CPU
-		{8BCD40BF-A38E-449B-82C9-108C0B3CDB1A}.Release|x64.Build.0 = Release|Any CPU
-		{8BCD40BF-A38E-449B-82C9-108C0B3CDB1A}.Release|x86.ActiveCfg = Release|Any CPU
-		{8BCD40BF-A38E-449B-82C9-108C0B3CDB1A}.Release|x86.Build.0 = Release|Any CPU
 		{BBD7593E-E420-4DE5-B151-CFDA99E0FD8F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{BBD7593E-E420-4DE5-B151-CFDA99E0FD8F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BBD7593E-E420-4DE5-B151-CFDA99E0FD8F}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -76,7 +62,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{8BCD40BF-A38E-449B-82C9-108C0B3CDB1A} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{BBD7593E-E420-4DE5-B151-CFDA99E0FD8F} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{B471E32E-6748-4AC5-8624-D4BD8A05E683} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{155586FE-6E6D-481D-A2CF-43D8D748AE56} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}

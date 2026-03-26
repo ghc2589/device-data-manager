@@ -2,7 +2,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DeviceDataManager.Application\DeviceDataManager.Application.csproj" />
-    <ProjectReference Include="..\DeviceDataManager.Domain\DeviceDataManager.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>

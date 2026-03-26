@@ -1,5 +1,3 @@
 {
-  "postgresConnectionString": "Host=your-server.postgres.database.azure.com;Database=appdb;Username=appuser;Password=REPLACE_ME;SSL Mode=Require",
-  "countQuery": "SELECT label::text AS label, value::bigint AS value FROM count_snapshots LIMIT @maxRows",
-  "maxRows": 100
+  "postgresConnectionString": "Host=postgres;Port=5432;Database=edge_db;Username=postgres;Password=YOUR_PASSWORD;SSL Mode=Prefer"
 }

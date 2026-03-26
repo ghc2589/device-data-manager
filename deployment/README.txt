@@ -1,9 +1,34 @@
-Module twin — desired properties (paste in Azure Portal)
+Module twin — desired properties (paste under properties.desired)
 
-1. IoT Hub → Devices → your Edge device → Device details → Module identities → DeviceDataManagerModule → Module Identity Twin.
-2. Under "properties" → "desired", paste the JSON from module-twin-desired.example.json (replace placeholders).
-3. The same JSON shape is embedded in deployment.template.json under modulesContent.DeviceDataManagerModule.properties.desired for deployment-based configuration.
+Only one key is required:
+  postgresConnectionString — Npgsql connection string (e.g. Host=postgres;Port=5432;Database=edge_db;Username=...;Password=...;SSL Mode=Prefer)
 
-Your SQL must return two columns named "label" (text) and "value" (bigint). Use @maxRows in countQuery when you want the twin maxRows cap applied.
+Queries are fixed in code against the "Count" table (aggregates by zone; minute buckets are rolled up for hourly).
 
-Direct method: invoke module method "GetCounts" on DeviceDataManagerModule (payload can be empty JSON {}).
+Direct methods (invoke on module DeviceDataManagerModule)
+
+1) GetCountsByDay
+   Body (JSON): { "day": "2026-03-26" }
+   Response: { "day": "...", "zones": [ { "zoneName": "...", "totalEvents": 123 } ] }
+
+2) GetCountsByHour
+   Body (JSON): { "day": "2026-03-26" }
+   Response: { "day": "...", "rows": [ { "zoneName": "...", "hourUtc": "...", "totalEvents": 99 } ] }
+   (Per-minute rows in the table are summed into one row per zone per hour; no per-minute direct method.)
+
+Optional dev override: environment variable POSTGRES_CONNECTION_STRING if twin is empty.
+
+--- ACR pull error (registry operation error / StatusCode 500) ---
+
+Private images need registry credentials on the Edge device. In the deployment manifest,
+under $edgeAgent -> properties.desired -> runtime -> settings -> registryCredentials,
+configure glitchaiacr.azurecr.io (see deployment.template.json).
+
+- username: usually the registry short name (e.g. glitchaiacr)
+- password: ACR admin password OR a service principal token with AcrPull
+- address: glitchaiacr.azurecr.io
+
+Replace REPLACE_WITH_ACR_ADMIN_PASSWORD_OR_TOKEN in the manifest, then redeploy.
+
+Also verify: the image tag exists in ACR; the device reaches *.azurecr.io (firewall/DNS);
+the module image URI matches exactly (including :beta2).
