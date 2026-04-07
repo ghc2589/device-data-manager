@@ -2,7 +2,9 @@ namespace DeviceDataManager.Application;
 
 public interface ICountReadRepository
 {
-    Task<Result<CountsByDayResponse>> GetCountsByDayAsync(DateOnly day, CancellationToken cancellationToken);
+    /// <param name="timeZoneId">Required IANA id (e.g. America/Lima).</param>
+    Task<Result<CountsByDayResponse>> GetCountsByDayAsync(DateOnly day, string? timeZoneId, CancellationToken cancellationToken);
 
-    Task<Result<CountsByHourResponse>> GetCountsByHourAsync(DateOnly day, CancellationToken cancellationToken);
+    /// <param name="timeZoneId">Required IANA id (e.g. America/Lima).</param>
+    Task<Result<CountsByHourResponse>> GetCountsByHourAsync(DateOnly day, string? timeZoneId, CancellationToken cancellationToken);
 }

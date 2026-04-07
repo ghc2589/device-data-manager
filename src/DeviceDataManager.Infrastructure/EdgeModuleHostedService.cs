@@ -108,12 +108,12 @@ public sealed class EdgeModuleHostedService : IHostedService
     {
         try
         {
-            if (!TryParseDay(request, out var day, out var parseError))
+            if (!TryParseDayQuery(request, out var day, out var timeZoneId, out var parseError))
             {
                 return ErrorResponse(HttpStatusCode.BadRequest, parseError ?? "Invalid request body.");
             }
 
-            var result = await _countReadRepository.GetCountsByDayAsync(day, CancellationToken.None);
+            var result = await _countReadRepository.GetCountsByDayAsync(day, timeZoneId, CancellationToken.None);
             if (!result.Success)
             {
                 return ErrorResponse(HttpStatusCode.ServiceUnavailable, result.ErrorMessage ?? "Unknown error.");
@@ -133,12 +133,12 @@ public sealed class EdgeModuleHostedService : IHostedService
     {
         try
         {
-            if (!TryParseDay(request, out var day, out var parseError))
+            if (!TryParseDayQuery(request, out var day, out var timeZoneId, out var parseError))
             {
                 return ErrorResponse(HttpStatusCode.BadRequest, parseError ?? "Invalid request body.");
             }
 
-            var result = await _countReadRepository.GetCountsByHourAsync(day, CancellationToken.None);
+            var result = await _countReadRepository.GetCountsByHourAsync(day, timeZoneId, CancellationToken.None);
             if (!result.Success)
             {
                 return ErrorResponse(HttpStatusCode.ServiceUnavailable, result.ErrorMessage ?? "Unknown error.");
@@ -154,14 +154,15 @@ public sealed class EdgeModuleHostedService : IHostedService
         }
     }
 
-    private static bool TryParseDay(MethodRequest request, out DateOnly day, out string? error)
+    private static bool TryParseDayQuery(MethodRequest request, out DateOnly day, out string? timeZoneId, out string? error)
     {
         day = default;
+        timeZoneId = null;
         error = null;
 
         if (request.Data == null || request.Data.Length == 0)
         {
-            error = "Body must be JSON: {\"day\":\"yyyy-MM-dd\"}.";
+            error = "Body must be JSON with day (yyyy-MM-dd) and required timeZone (IANA id, e.g. America/Lima).";
             return false;
         }
 
@@ -178,15 +179,39 @@ public sealed class EdgeModuleHostedService : IHostedService
 
         if (payload is null || string.IsNullOrWhiteSpace(payload.Day))
         {
-            error = "Property \"day\" is required (yyyy-MM-dd).";
+            error = "Property 'day' is required (yyyy-MM-dd).";
             return false;
         }
 
         if (!DateOnly.TryParse(payload.Day, CultureInfo.InvariantCulture, DateTimeStyles.None, out day))
         {
-            error = "Property \"day\" must be a calendar date (yyyy-MM-dd).";
+            error = "Property 'day' must be a calendar date (yyyy-MM-dd).";
             return false;
         }
+
+        if (string.IsNullOrWhiteSpace(payload.TimeZone))
+        {
+            error = "Property 'timeZone' is required and must be a valid IANA id (e.g. America/Lima).";
+            return false;
+        }
+
+        var tz = payload.TimeZone.Trim();
+        try
+        {
+            _ = TimeZoneInfo.FindSystemTimeZoneById(tz);
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            error = "Property 'timeZone' must be a valid IANA id (e.g. America/Lima).";
+            return false;
+        }
+        catch (InvalidTimeZoneException)
+        {
+            error = "Property 'timeZone' must be a valid IANA id (e.g. America/Lima).";
+            return false;
+        }
+
+        timeZoneId = tz;
 
         return true;
     }

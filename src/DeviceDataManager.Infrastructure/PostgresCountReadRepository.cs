@@ -6,26 +6,26 @@ namespace DeviceDataManager.Infrastructure;
 
 public sealed class PostgresCountReadRepository : ICountReadRepository
 {
-    private const string SqlTotalsByZoneForDay =
+    private const string SqlTotalsByZoneForDayInTimeZone =
         """
         SELECT zone_name,
                direction,
                SUM(events_count)::bigint AS events_sum
         FROM "Count"
-        WHERE day_date = @day
+        WHERE (timezone(@tz, bucket_start))::date = @day
         GROUP BY zone_name, direction
         ORDER BY zone_name, direction;
         """;
 
-    private const string SqlTotalsByZoneAndHourForDay =
+    private const string SqlTotalsByZoneAndHourInTimeZone =
         """
         SELECT zone_name,
                direction,
-               date_trunc('hour', bucket_start) AS hour_bucket,
+               (date_trunc('hour', timezone(@tz, bucket_start)) AT TIME ZONE @tz) AS hour_bucket,
                SUM(events_count)::bigint AS events_sum
         FROM "Count"
-        WHERE day_date = @day
-        GROUP BY zone_name, direction, date_trunc('hour', bucket_start)
+        WHERE (timezone(@tz, bucket_start))::date = @day
+        GROUP BY zone_name, direction, date_trunc('hour', timezone(@tz, bucket_start))
         ORDER BY zone_name, direction, hour_bucket;
         """;
 
@@ -38,7 +38,10 @@ public sealed class PostgresCountReadRepository : ICountReadRepository
         _logger = logger;
     }
 
-    public async Task<Result<CountsByDayResponse>> GetCountsByDayAsync(DateOnly day, CancellationToken cancellationToken)
+    public async Task<Result<CountsByDayResponse>> GetCountsByDayAsync(
+        DateOnly day,
+        string? timeZoneId,
+        CancellationToken cancellationToken)
     {
         var (dataSource, options) = _state.Snapshot();
         if (dataSource is null || string.IsNullOrWhiteSpace(options?.PostgresConnectionString))
@@ -50,8 +53,9 @@ public sealed class PostgresCountReadRepository : ICountReadRepository
         try
         {
             await using var conn = await dataSource.OpenConnectionAsync(cancellationToken);
-            await using var cmd = new NpgsqlCommand(SqlTotalsByZoneForDay, conn);
+            await using var cmd = new NpgsqlCommand(SqlTotalsByZoneForDayInTimeZone, conn);
             cmd.Parameters.AddWithValue("day", day);
+            cmd.Parameters.AddWithValue("tz", timeZoneId!);
 
             var zones = new List<ZoneDayTotal>();
             await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
@@ -68,6 +72,7 @@ public sealed class PostgresCountReadRepository : ICountReadRepository
             return Result<CountsByDayResponse>.Ok(new CountsByDayResponse
             {
                 Day = day.ToString("yyyy-MM-dd"),
+                TimeZone = timeZoneId,
                 Zones = zones,
             });
         }
@@ -78,7 +83,10 @@ public sealed class PostgresCountReadRepository : ICountReadRepository
         }
     }
 
-    public async Task<Result<CountsByHourResponse>> GetCountsByHourAsync(DateOnly day, CancellationToken cancellationToken)
+    public async Task<Result<CountsByHourResponse>> GetCountsByHourAsync(
+        DateOnly day,
+        string? timeZoneId,
+        CancellationToken cancellationToken)
     {
         var (dataSource, options) = _state.Snapshot();
         if (dataSource is null || string.IsNullOrWhiteSpace(options?.PostgresConnectionString))
@@ -90,20 +98,23 @@ public sealed class PostgresCountReadRepository : ICountReadRepository
         try
         {
             await using var conn = await dataSource.OpenConnectionAsync(cancellationToken);
-            await using var cmd = new NpgsqlCommand(SqlTotalsByZoneAndHourForDay, conn);
+            await using var cmd = new NpgsqlCommand(SqlTotalsByZoneAndHourInTimeZone, conn);
             cmd.Parameters.AddWithValue("day", day);
+            cmd.Parameters.AddWithValue("tz", timeZoneId!);
 
             var rows = new List<ZoneHourTotal>();
             await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
             var hourOrd = reader.GetOrdinal("hour_bucket");
+            var displayTz = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId!);
             while (await reader.ReadAsync(cancellationToken))
             {
-                var hourUtc = ReadHourUtc(reader, hourOrd);
+                var instant = ReadHourUtc(reader, hourOrd);
+                var hourStart = TimeZoneInfo.ConvertTime(instant, displayTz);
                 rows.Add(new ZoneHourTotal
                 {
                     ZoneName = reader.GetString(reader.GetOrdinal("zone_name")),
                     Direction = ReadDirection(reader),
-                    HourUtc = hourUtc,
+                    HourStart = hourStart,
                     Count = reader.GetInt64(reader.GetOrdinal("events_sum")),
                 });
             }
@@ -111,6 +122,7 @@ public sealed class PostgresCountReadRepository : ICountReadRepository
             return Result<CountsByHourResponse>.Ok(new CountsByHourResponse
             {
                 Day = day.ToString("yyyy-MM-dd"),
+                TimeZone = timeZoneId,
                 Rows = rows,
             });
         }

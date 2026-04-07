@@ -8,11 +8,11 @@ Queries are fixed in code against the "Count" table (aggregates by zone; minute 
 Direct methods (invoke on module DeviceDataManagerModule)
 
 1) GetCountsByDay
-   Body (JSON): { "day": "2026-03-26" }
+   Body (JSON): { "day": "2026-03-26", "timeZone": "America/Lima" }
    Response: { "day": "...", "zones": [ { "zoneName": "...", "totalEvents": 123 } ] }
 
 2) GetCountsByHour
-   Body (JSON): { "day": "2026-03-26" }
+   Body (JSON): { "day": "2026-03-26", "timeZone": "America/Lima" }
    Response: { "day": "...", "rows": [ { "zoneName": "...", "hourUtc": "...", "totalEvents": 99 } ] }
    (Per-minute rows in the table are summed into one row per zone per hour; no per-minute direct method.)
 
