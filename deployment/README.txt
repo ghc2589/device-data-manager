@@ -31,4 +31,4 @@ configure glitchaiacr.azurecr.io (see deployment.template.json).
 Replace REPLACE_WITH_ACR_ADMIN_PASSWORD_OR_TOKEN in the manifest, then redeploy.
 
 Also verify: the image tag exists in ACR; the device reaches *.azurecr.io (firewall/DNS);
-the module image URI matches exactly (including :beta2).
+the module image URI matches exactly (including :1.0).

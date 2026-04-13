@@ -105,52 +105,40 @@ public sealed class EdgeModuleHostedService : IHostedService
     }
 
     private async Task<MethodResponse> OnGetCountsByDayAsync(MethodRequest request, object userContext)
-    {
-        try
-        {
-            if (!TryParseDayQuery(request, out var day, out var timeZoneId, out var parseError))
-            {
-                return ErrorResponse(HttpStatusCode.BadRequest, parseError ?? "Invalid request body.");
-            }
-
-            var result = await _countReadRepository.GetCountsByDayAsync(day, timeZoneId, CancellationToken.None);
-            if (!result.Success)
-            {
-                return ErrorResponse(HttpStatusCode.ServiceUnavailable, result.ErrorMessage ?? "Unknown error.");
-            }
-
-            var json = System.Text.Json.JsonSerializer.Serialize(result.Value, JsonWriteOptions);
-            return new MethodResponse(Encoding.UTF8.GetBytes(json), (int)HttpStatusCode.OK);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "{Method} failed.", GetCountsByDayMethod);
-            return ErrorResponse(HttpStatusCode.InternalServerError, "Internal error.");
-        }
-    }
+        => await HandleDirectMethodAsync(GetCountsByDayMethod, request, _countReadRepository.GetCountsByDayAsync);
 
     private async Task<MethodResponse> OnGetCountsByHourAsync(MethodRequest request, object userContext)
+        => await HandleDirectMethodAsync(GetCountsByHourMethod, request, _countReadRepository.GetCountsByHourAsync);
+
+    private async Task<MethodResponse> HandleDirectMethodAsync<TResponse>(
+        string methodName,
+        MethodRequest request,
+        Func<DateOnly, string?, CancellationToken, Task<Result<TResponse>>> handler)
     {
+        _logger.LogInformation(
+            "Direct method {Method} received. Payload: {Payload}",
+            methodName,
+            ReadRequestBody(request));
+
         try
         {
             if (!TryParseDayQuery(request, out var day, out var timeZoneId, out var parseError))
             {
-                return ErrorResponse(HttpStatusCode.BadRequest, parseError ?? "Invalid request body.");
+                return CreateLoggedResponse(methodName, HttpStatusCode.BadRequest, new { error = parseError ?? "Invalid request body." });
             }
 
-            var result = await _countReadRepository.GetCountsByHourAsync(day, timeZoneId, CancellationToken.None);
+            var result = await handler(day, timeZoneId, CancellationToken.None);
             if (!result.Success)
             {
-                return ErrorResponse(HttpStatusCode.ServiceUnavailable, result.ErrorMessage ?? "Unknown error.");
+                return CreateLoggedResponse(methodName, HttpStatusCode.ServiceUnavailable, new { error = result.ErrorMessage ?? "Unknown error." });
             }
 
-            var json = System.Text.Json.JsonSerializer.Serialize(result.Value, JsonWriteOptions);
-            return new MethodResponse(Encoding.UTF8.GetBytes(json), (int)HttpStatusCode.OK);
+            return CreateLoggedResponse(methodName, HttpStatusCode.OK, result.Value);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{Method} failed.", GetCountsByHourMethod);
-            return ErrorResponse(HttpStatusCode.InternalServerError, "Internal error.");
+            _logger.LogError(ex, "{Method} failed.", methodName);
+            return CreateLoggedResponse(methodName, HttpStatusCode.InternalServerError, new { error = "Internal error." });
         }
     }
 
@@ -216,9 +204,26 @@ public sealed class EdgeModuleHostedService : IHostedService
         return true;
     }
 
-    private static MethodResponse ErrorResponse(HttpStatusCode status, string message)
+    private MethodResponse CreateLoggedResponse<TPayload>(string methodName, HttpStatusCode status, TPayload payload)
     {
-        var json = System.Text.Json.JsonSerializer.Serialize(new { error = message }, JsonWriteOptions);
+        var json = System.Text.Json.JsonSerializer.Serialize(payload, JsonWriteOptions);
+
+        _logger.LogInformation(
+            "Direct method {Method} responded with status {StatusCode}. Body: {Body}",
+            methodName,
+            (int)status,
+            json);
+
         return new MethodResponse(Encoding.UTF8.GetBytes(json), (int)status);
+    }
+
+    private static string ReadRequestBody(MethodRequest request)
+    {
+        if (request.Data is null || request.Data.Length == 0)
+        {
+            return "<empty>";
+        }
+
+        return Encoding.UTF8.GetString(request.Data);
     }
 }
